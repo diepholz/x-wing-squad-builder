@@ -44,7 +44,7 @@ def test_pilot_names_cost_initiative(xwing: XWing):
     ship = xwing.get_ship(FACTION_NAME, test_ship_name)
     test_arr = ship.pilot_names_cost_initiative
     expected_order = ["epsilon squadron cadet", "zeta squadron pilot", "omega squadron ace",
-                      "^null^", "lieutenant rivas", "tn-3465", "^muse^", "^longshot^",
+                      "^null^", "lieutenant rivas", "tn-3465", "^muse^", "^longshot^", "lin gaava",
                       "^static^", "^scorch^ (tie fighter)", "commander malarus (tie fighter)",
                       "^midnight^"]
     for i, item in enumerate(test_arr):

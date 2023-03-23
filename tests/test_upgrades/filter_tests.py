@@ -52,6 +52,7 @@ FILTER_TESTS = {
                 "heavy laser cannon",
                 "tractor beam",
                 "ion cannon",
+                "flechette cannon",
                 # MODIFICATION SLOT
                 "delayed fuses",
                 "munitions failsafe",

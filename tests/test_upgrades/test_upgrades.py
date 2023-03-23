@@ -231,18 +231,6 @@ def test_filtered_upgrades_by_pilot(xwing: XWing, upgrades: Upgrades, faction_na
         expected.pop(expected.index(upgrade['name']))
     assert len(expected) == 0
 
-def test_contracted_scout(xwing: XWing, upgrades: Upgrades):
-    ship = xwing.get_ship("scum and villainy", "jumpmaster 5000")
-    pilot = ship.get_pilot_data("contracted scout")
-    pilot_equip = PilotEquip(ship, pilot)
-    pilot_equip.filtered_upgrades = upgrades.filtered_upgrades_by_pilot(pilot_equip, Squad())
-    breakpoint()
-    for upgrade in pilot_equip.filtered_upgrades:
-        assert upgrade['name'] in expected
-        expected.pop(expected.index(upgrade['name']))
-    assert len(expected) == 0
-
-    # equip an action that should make another upgrade available
 
 @pytest.mark.parametrize(
     "faction_name, ship_name, pilot_name, fake_action_name, fake_action_color, fake_slots, expected_upgrade_name", [
