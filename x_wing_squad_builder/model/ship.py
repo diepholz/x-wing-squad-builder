@@ -1,5 +1,6 @@
 from typing import List, Tuple, Optional, Union, Dict
-from ..utils import prettify_name
+from ..utils import prettify_name, gui_text_encode
+
 
 
 class Ship:
@@ -13,6 +14,10 @@ class Ship:
     @property
     def ship_name(self) -> str:
         return self.__ship_data['name']
+
+    @property
+    def ship_name_encoded(self) -> str:
+        return gui_text_encode(self.ship_name)
 
     @property
     def faction_name(self) -> str:

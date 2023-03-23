@@ -6,6 +6,7 @@ from PySide6 import QtWidgets, QtCore, QtGui
 from x_wing_squad_builder.definition_form import DefinitionForm
 from x_wing_squad_builder.upgrade_form import UpgradeForm
 from x_wing_squad_builder.viewer import Viewer
+from x_wing_squad_builder.model import Ship
 from .settings import Settings
 from .worker import Worker
 from .root_logger_handler import RootLoggerHandler
@@ -231,6 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
             filtered_for_gui = self.upgrades.filtered_upgrades_for_gui(
                 filtered_upgrades)
 
+        self.update_ship_information(pilot_data.ship)
         populate_list_widget(filtered_for_gui, self.ui.upgrade_list_widget)
         self.pilot_image_label = pilot_data.pilot_name
         self.update_upgrade(self.squad_tree_upgrade_name_selection)
@@ -459,21 +461,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ship = self.xwing.get_ship(self.faction_selected, ship_name)
         if ship is None:
             return
-        self.ui.ship_name_label.setText(prettify_name(ship_name))
-        self.ui.base_label.setText(prettify_name(ship.base))
-        self.ui.initiative_label.setText(
-            str(ship.initiative_list).replace('[', '').replace(']', ''))
-        low, high = ship.point_range
-        self.ui.points_label.setText(f"{low} - {high}")
-        self.ui.maneuver_image_label.setPixmap(
-            image_path_to_qpixmap(self.maneuvers_dir / f"{ship_name}.png"))
-        update_action_layout(self.ui.ship_action_layout,
-                             ship.actions, self.actions_dir)
-        update_action_layout(self.ui.pilot_action_layout, [], self.actions_dir)
-        update_upgrade_slot_layout(
-            self.ui.ship_upgrade_slot_layout, ship.upgrade_slots, self.upgrade_slots_dir)
-        update_upgrade_slot_layout(
-            self.ui.pilot_upgrade_slot_layout, [], self.upgrade_slots_dir)
+
+        self.update_ship_information(ship)
 
         self.ui.pilot_keyword_label.clear()
 
@@ -482,6 +471,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pilot_list_widget.blockSignals(False)
         populate_list_widget(ship.pilot_names_for_gui,
                              self.ui.pilot_list_widget)
+
+    def update_ship_information(self, ship: Ship):
+        self.ui.ship_name_label.setText(prettify_name(ship.ship_name))
+        self.ui.base_label.setText(prettify_name(ship.base))
+        self.ui.initiative_label.setText(
+            str(ship.initiative_list).replace('[', '').replace(']', ''))
+        low, high = ship.point_range
+        self.ui.points_label.setText(f"{low} - {high}")
+        self.ui.maneuver_image_label.setPixmap(
+            image_path_to_qpixmap(self.maneuvers_dir / f"{ship.ship_name}.png"))
+        update_action_layout(self.ui.ship_action_layout,
+                             ship.actions, self.actions_dir)
+        update_action_layout(self.ui.pilot_action_layout, [], self.actions_dir)
+        update_upgrade_slot_layout(
+            self.ui.ship_upgrade_slot_layout, ship.upgrade_slots, self.upgrade_slots_dir)
+        update_upgrade_slot_layout(
+            self.ui.pilot_upgrade_slot_layout, [], self.upgrade_slots_dir)
 
     @property
     def pilot_image_label(self):
