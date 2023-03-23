@@ -1,4 +1,5 @@
 from enum import Enum
+from dataclasses import dataclass
 
 class Statistics(Enum):
     ATTACKS = "attacks"
@@ -25,4 +26,11 @@ class Attributes(Enum):
     LIMIT = "limit"
     COST = "cost"
     KEYWORDS = "keywords"
+
+@dataclass
+class Action:
+    action: str
+    color: str
+    action_link: str
+    color_link: str
 

@@ -1,4 +1,5 @@
 from .pilot_equip import PilotEquip
+from .definition import Action
 from .squad import Squad
 from ..utils import prettify_name
 from ..settings import Settings
@@ -131,7 +132,8 @@ class Upgrades:
                     if not statistics_filter_adv(value, test_statistic[key]):
                         valid = False
                 elif key == "actions":
-                    if not actions_filter(value, pilot.actions):
+                    restricted_actions = [Action(**action) for action in value]
+                    if not actions_filter(restricted_actions, pilot.actions):
                         valid = False
                 elif key == "keywords":
                     if not multiple_name_filter(value, pilot.keywords):

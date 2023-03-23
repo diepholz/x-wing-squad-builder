@@ -1,4 +1,5 @@
 from collections import Counter
+from .definition import Action
 
 from typing import List
 
@@ -34,7 +35,7 @@ def multiple_name_filter(value: list, test_cases):
     return True
 
 
-def actions_filter(restricted_actions: list, pilot_actions):
+def actions_filter(restricted_actions: list[Action], pilot_actions: list[Action]):
     """
     returns true if a pilot action is equal to one of the restricted actions,
     if the restricted_actions list is empty, we assume no restriction.
@@ -42,7 +43,8 @@ def actions_filter(restricted_actions: list, pilot_actions):
     if restricted_actions:
         for action in pilot_actions:
             for r_action in restricted_actions:
-                if action == r_action:
+                if (action.action == r_action.action and action.color == r_action.color) or (
+                    action.action_link == r_action.action and action.color_link == r_action.color):
                     return True
         return False
     return True

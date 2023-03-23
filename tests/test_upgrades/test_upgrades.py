@@ -1,4 +1,5 @@
 import pytest
+from x_wing_squad_builder.model.definition import Action
 
 from x_wing_squad_builder.model.upgrade import Upgrades
 from x_wing_squad_builder.model.xwing import XWing
@@ -109,6 +110,7 @@ def test_actions_filter():
             'color_link': None
         }
     ]
+    restrictions = [Action(**action) for action in restrictions]
     pilot_actions = [
         {
             'action': 'dummy test',
@@ -123,6 +125,7 @@ def test_actions_filter():
             'color_link': None
         }
     ]
+    pilot_actions = [Action(**action) for action in pilot_actions]
     assert actions_filter(restrictions, pilot_actions) is True
 
     pilot_actions = [
@@ -133,9 +136,15 @@ def test_actions_filter():
             'color_link': None
         }
     ]
+    pilot_actions = [Action(**action) for action in pilot_actions]
 
     assert actions_filter(restrictions, pilot_actions) is False
     assert actions_filter([], pilot_actions) is True
+
+def test_action_filter_with_link():
+    restriction = [Action(action="cool", color="booyah", action_link=None, color_link=None)]
+    pilot_actions = [Action(action="wat", color="theheck", action_link="cool", color_link="booyah")]
+    assert actions_filter(restriction, pilot_actions) is True
 
 
 @pytest.mark.parametrize(
@@ -217,6 +226,17 @@ def test_filtered_upgrades_by_pilot(xwing: XWing, upgrades: Upgrades, faction_na
     pilot = ship.get_pilot_data(pilot_name)
     pilot_equip = PilotEquip(ship, pilot)
     pilot_equip.filtered_upgrades = upgrades.filtered_upgrades_by_pilot(pilot_equip, Squad())
+    for upgrade in pilot_equip.filtered_upgrades:
+        assert upgrade['name'] in expected
+        expected.pop(expected.index(upgrade['name']))
+    assert len(expected) == 0
+
+def test_contracted_scout(xwing: XWing, upgrades: Upgrades):
+    ship = xwing.get_ship("scum and villainy", "jumpmaster 5000")
+    pilot = ship.get_pilot_data("contracted scout")
+    pilot_equip = PilotEquip(ship, pilot)
+    pilot_equip.filtered_upgrades = upgrades.filtered_upgrades_by_pilot(pilot_equip, Squad())
+    breakpoint()
     for upgrade in pilot_equip.filtered_upgrades:
         assert upgrade['name'] in expected
         expected.pop(expected.index(upgrade['name']))

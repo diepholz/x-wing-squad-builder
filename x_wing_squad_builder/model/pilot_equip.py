@@ -3,6 +3,7 @@ from collections import namedtuple
 
 from .ship import Ship
 from .upgrade_filters import upgrade_slot_filter
+from .definition import Action
 
 from ..settings import Settings
 from ..utils import prettify_name
@@ -96,7 +97,7 @@ class PilotEquip:
         return self.data.get("statistics")
 
     @property
-    def default_pilot_actions(self) -> List[dict]:
+    def default_pilot_actions(self) -> List[Action]:
         """
         returns a list of pilot action dictionaries (regardless of what the pilot has equipped) of the form:
         [
@@ -110,10 +111,10 @@ class PilotEquip:
             ...
         ]
         """
-        return self.data.get("actions").copy()
+        return [Action(**action) for action in self.data.get("actions").copy()]
 
     @property
-    def actions(self) -> List[dict]:
+    def actions(self) -> List[Action]:
         """
         returns a pilot's available actions based on equipped upgrades.
         this needs the upgrades list in order to evaluate the equipped
@@ -131,7 +132,10 @@ class PilotEquip:
         """
         additional_actions = []
         for upgrade in self.equipped_upgrades:
-            additional_actions.extend(upgrade.attributes.get("modifications", {}).get("actions", []))
+
+            upgrade_actions = upgrade.attributes.get("modifications", {}).get("actions", [])
+            upgrade_actions = [Action(**action) for action in upgrade_actions]
+            additional_actions.extend(upgrade_actions)
 
         return self.default_pilot_actions + additional_actions
 

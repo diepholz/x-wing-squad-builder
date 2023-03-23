@@ -1,5 +1,6 @@
 import pytest
 
+from x_wing_squad_builder.model.definition import Action
 from x_wing_squad_builder.model.upgrade import Upgrades
 from x_wing_squad_builder.model.xwing import XWing
 from x_wing_squad_builder.model.pilot_equip import PilotEquip
@@ -79,6 +80,7 @@ def test_available_actions(xwing: XWing, faction_name, ship_name, pilot_name):
             'color_link': None
         },
     ]
+    expected = [Action(**action) for action in expected]
 
     assert pilot_equip.default_pilot_actions == expected
 
@@ -103,6 +105,6 @@ def test_available_actions(xwing: XWing, faction_name, ship_name, pilot_name):
     }
     pilot_equip.equip_upgrade(fake_slots, fake_name, fake_cost, fake_upgrade_dict)
 
-    expected.append(fake_action)
+    expected.append(Action(**fake_action))
 
     assert pilot_equip.actions == expected
