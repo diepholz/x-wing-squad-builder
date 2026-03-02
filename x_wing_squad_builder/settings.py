@@ -39,7 +39,7 @@ class Settings:
         FREEDOM = "Freedom"
     
     defaults = {
-        Key.LOG_FILE_DIR: Path(os.getenv("LOCALAPPDATA")) / organization_name / application_name,
+        Key.LOG_FILE_DIR: Path(os.getenv("LOCALAPPDATA") or Path.home() / ".local" / "share") / organization_name / application_name,
         Key.THEME: Theme.LIGHT,
         Key.MODE: Mode.STANDARD,
         Key.SCALE: 1,
