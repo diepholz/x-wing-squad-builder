@@ -37,17 +37,17 @@ class Ship:
 
     @property
     def pilot_names_cost_initiative(self):
-        arr_0 = []
-        arr_1 = []
+        arr_generics = []
+        arr_aces = []
         for pilot in self.pilots:
             pilot_tuple = (pilot["initiative"], pilot["cost"], pilot["name"])
-            if pilot["limit"] == 0:
-                arr_0.append(pilot_tuple)
+            if pilot.get("unique", False):
+                arr_aces.append(pilot_tuple)
             else:
-                arr_1.append(pilot_tuple)
-        arr_0 = sorted(arr_0, key=lambda x: (x[0], x[1], x[2]))
-        arr_1 = sorted(arr_1, key=lambda x: (x[0], x[1], x[2]))
-        arr = arr_0 + arr_1
+                arr_generics.append(pilot_tuple)
+        arr_generics = sorted(arr_generics, key=lambda x: (x[0], x[1], x[2]))
+        arr_aces = sorted(arr_aces, key=lambda x: (x[0], x[1], x[2]))
+        arr = arr_generics + arr_aces
         return arr
 
     @property
@@ -84,16 +84,9 @@ class Ship:
         return self.__ship_data
 
     @staticmethod
-    def get_statistic(statistics: list, attribute: str) -> Union[List, Dict]:
-        """
-        grabs a given attribute from the list of statistics.
-
-        this will return a dictionary for everything except attacks, which returns
-        a list of dictionaries.
-        """
-        for stat in statistics:
-            if attribute in stat:
-                return stat[attribute]
+    def get_statistic(statistics: dict, attribute: str) -> Union[List, Dict, int, None]:
+        """Returns the value for the given statistic attribute from the flat statistics dict."""
+        return statistics.get(attribute)
 
     def get_pilot_data(self, pilot_name: str) -> Optional[dict]:
         for pilot in self.pilots:

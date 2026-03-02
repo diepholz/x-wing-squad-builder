@@ -4,7 +4,7 @@ from .squad import Squad
 from ..utils import prettify_name
 from ..settings import Settings
 from .upgrade_filters import (upgrade_slot_filter, name_filter, multiple_name_filter, actions_filter,
-                              statistics_filter_simple, statistics_filter_adv, limit_filter, bool_string_filter)
+                              statistics_filter_simple, statistics_filter_adv, limit_filter)
 
 from .unique_upgrades import UNIQUE_UPGRADES, get_root
 
@@ -68,10 +68,10 @@ class Upgrades:
         filtered = []
         for upgrade in self.upgrades_list:
             valid = upgrade_slot_filter(self.get_upgrade_slots(upgrade), pilot.upgrade_slots)
-            if bool_string_filter(upgrade["epic"]) and self.settings.mode != Settings.Mode.EPIC:
+            if upgrade.get("epic", False) and self.settings.mode != Settings.Mode.EPIC:
                 valid = False
 
-            solitary = upgrade.get("solitary", "False") == "True"
+            solitary = upgrade.get("solitary", False)
             upgrade_root = get_root(upgrade['name'])
             if solitary or upgrade_root in UNIQUE_UPGRADES:
                 equipped_upgrade_names = [val.name for _, member in squad.squad_dict.items() for val in member.equipped_upgrades]
@@ -125,11 +125,10 @@ class Upgrades:
                     if not multiple_name_filter(value, pilot.arc_types):
                         valid = False
                 elif key in ["agility", "hull"]:
-                    if not statistics_filter_simple(value, pilot.get_statistic(pilot.statistics, key)):
+                    if not statistics_filter_simple(value, {key: pilot.statistics.get(key)}):
                         valid = False
                 elif key in ["shield", "force", "energy", "charge"]:
-                    test_statistic = pilot.get_statistic(pilot.statistics, key)
-                    if not statistics_filter_adv(value, test_statistic[key]):
+                    if not statistics_filter_adv(value, pilot.statistics.get(key, {})):
                         valid = False
                 elif key == "actions":
                     restricted_actions = [Action(**action) for action in value]
@@ -177,31 +176,35 @@ class Upgrades:
     def get_upgrade_restrictions(upgrade: dict):
         return upgrade.get("restrictions")
 
+    _COST_TYPE_TO_ATTRIBUTE = {
+        "by_base": "base",
+        "by_initiative": "initiative",
+        "by_agility": "agility",
+        "by_attacks": "attacks",
+    }
+
     @staticmethod
     def get_filtered_upgrade_cost(upgrade: dict, pilot: PilotEquip) -> int:
         """
-        Returns the final cost of an upgrade based on the equipped pilot
+        Returns the final cost of an upgrade based on the equipped pilot.
         """
         cost = upgrade.get("cost")
-        if type(cost) is int:
+        if isinstance(cost, int):
             return cost
-        else:
-            attribute = cost.get("attribute")
-            pilot_value = str(pilot.get_attribute(attribute))
-            cost_int = cost.get(pilot_value)
-            return cost_int
+        attribute = Upgrades._COST_TYPE_TO_ATTRIBUTE[cost["type"]]
+        pilot_value = str(pilot.get_attribute(attribute))
+        return cost[pilot_value]
 
     @staticmethod
     def get_upgrade_cost(upgrade: dict) -> Union[int, str]:
-        """Returns the cost of an unfiltered upgrade
-        WARNING: this sometimes returns "variable"
-        Use get_filtered_upgrade_cost when needing the cost for equipping upgrades
+        """Returns the cost of an unfiltered upgrade.
+        WARNING: this sometimes returns "Variable"
+        Use get_filtered_upgrade_cost when needing the cost for equipping upgrades.
         """
         cost = upgrade.get("cost")
-        if type(cost) is int:
+        if isinstance(cost, int):
             return cost
-        else:
-            return "Variable"
+        return "Variable"
 
     @staticmethod
     def get_upgrade_slots(upgrade: dict) -> List[str]:

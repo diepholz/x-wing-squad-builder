@@ -11,7 +11,7 @@ from .settings import Settings
 
 
 def parse_attacks(attacks_line_edit: QtWidgets.QLineEdit, arc_types_line_edit: QtWidgets.QLineEdit, statistics: dict):
-    attacks_list = Ship.get_statistic(statistics, "attacks")
+    attacks_list = statistics.get("attacks", [])
     attack_vals = []
     arc_types = []
     for attack in attacks_list:
@@ -21,11 +21,8 @@ def parse_attacks(attacks_line_edit: QtWidgets.QLineEdit, arc_types_line_edit: Q
     arc_types_line_edit.setText(arr_to_comma_separated_list(arc_types))
 
 
-def parse_check_box(check_box: QtWidgets.QCheckBox, value: str):
-    if value == "True":
-        check_box.setChecked(True)
-    else:
-        check_box.setChecked(False)
+def parse_check_box(check_box: QtWidgets.QCheckBox, value: bool):
+    check_box.setChecked(bool(value))
 
 
 def parse_actions(actions_line_edit: QtWidgets.QLineEdit, action_colors_line_edit: QtWidgets.QLineEdit, actions: List[Dict[str, str]]):
@@ -49,14 +46,15 @@ def parse_actions(actions_line_edit: QtWidgets.QLineEdit, action_colors_line_edi
 
 
 def set_line_edit(line_edit: QtWidgets.QLineEdit, attribute: str, restrictions: dict):
-    line_edit.setText(arr_to_comma_separated_list(restrictions.get(attribute)))
+    line_edit.setText(arr_to_comma_separated_list(restrictions.get(attribute) or []))
 
 
 def set_low_high(low_spinbox: QtWidgets.QSpinBox, high_spinbox: QtWidgets.QSpinBox, attribute: str, restrictions: dict):
-    low_val = restrictions.get(attribute).get("low")
+    range_dict = restrictions.get(attribute) or {}
+    low_val = range_dict.get("low")
     if low_val is None:
         low_val = -1
-    high_val = restrictions.get(attribute).get("high")
+    high_val = range_dict.get("high")
     if high_val is None:
         high_val = -1
     low_spinbox.setValue(low_val)

@@ -86,7 +86,7 @@ class UpgradeForm(QtWidgets.QDialog):
         else:
             cost = {}
             attribute, attribute_list = self.variable_attribute_list
-            cost["attribute"] = attribute
+            cost["type"] = f"by_{attribute}"
             for attribute, val in zip(attribute_list, self.variable_costs):
                 cost[str(attribute)] = val
             return cost
@@ -362,15 +362,15 @@ class UpgradeForm(QtWidgets.QDialog):
 
     @property
     def autoinclude(self):
-        return str(self.ui.autoinclude_checkbox.isChecked())
+        return self.ui.autoinclude_checkbox.isChecked()
 
     @property
     def epic(self):
-        return str(self.ui.epic_checkbox.isChecked())
+        return self.ui.epic_checkbox.isChecked()
 
     @property
     def solitary(self):
-        return str(self.ui.solitary_checkbox.isChecked())
+        return self.ui.solitary_checkbox.isChecked()
 
     @property
     def valid_entry(self):
@@ -478,8 +478,8 @@ class UpgradeForm(QtWidgets.QDialog):
         self.ui.upgrade_slot_line_edit.setText(
             arr_to_comma_separated_list(upgrade_dict.get("upgrade_slot_types")))
         self.parse_cost(upgrade_dict.get("cost"))
-        restrictions = upgrade_dict.get("restrictions")
-        self.ui.upgrade_limit_spinbox.setValue(restrictions.get("limit"))
+        restrictions = upgrade_dict.get("restrictions") or {}
+        self.ui.upgrade_limit_spinbox.setValue(restrictions.get("limit", 0))
         lows_and_highs = [
             (self.ui.pilot_limit_low_spinbox,
              self.ui.pilot_limit_high_spinbox, "pilot_limit"),
@@ -521,7 +521,7 @@ class UpgradeForm(QtWidgets.QDialog):
         for low_and_high in deep_lows_and_highs:
             low_spinbox, high_spinbox, attribute, deep_attribute = low_and_high
             set_low_high(low_spinbox, high_spinbox,
-                         deep_attribute, restrictions[attribute])
+                         deep_attribute, restrictions.get(attribute) or {})
 
         deep_line_edits = [
             (self.ui.faction_line_edit, "factions"),
@@ -566,11 +566,12 @@ class UpgradeForm(QtWidgets.QDialog):
         this function will set the cost spinbox, and update variable cost
         gui objects as needed
         """
-        if type(cost) == int:
+        if isinstance(cost, int):
             self.ui.upgrade_cost_spinbox.setValue(cost)
             return
         self.ui.upgrade_cost_spinbox.setValue(-1)
-        attribute = cost.get("attribute")
+        cost_type = cost.get("type", "")  # e.g. "by_base"
+        attribute = cost_type[3:] if cost_type.startswith("by_") else cost_type  # e.g. "base"
         checkboxes = [
             self.ui.variable_agility_checkbox,
             self.ui.variable_base_checkbox,
@@ -580,7 +581,7 @@ class UpgradeForm(QtWidgets.QDialog):
         for checkbox in checkboxes:
             if attribute in checkbox.objectName():
                 checkbox.setChecked(True)
-        attribute_vals = [key for key in cost.keys() if key != "attribute"]
+        attribute_vals = [key for key in cost.keys() if key != "type"]
         attribute_costs = [cost[val] for val in attribute_vals]
         self.ui.variable_attribute_line_edit.setText(
             arr_to_comma_separated_list(attribute_vals))

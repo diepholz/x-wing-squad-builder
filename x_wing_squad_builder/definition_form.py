@@ -317,6 +317,26 @@ class DefinitionForm(QtWidgets.QDialog):
                 "recharge": self.evaluate_none_spinbox(recharge_spinbox),
                 "decharge": self.evaluate_none_spinbox(decharge_spinbox)}
 
+    def _build_pilot_stat_overrides(self) -> dict:
+        """Build a sparse stat_overrides dict from pilot form fields (only non-null values)."""
+        overrides = {}
+        attacks = self.pilot_combined_attacks_arc_types
+        if attacks:
+            overrides["attacks"] = attacks
+        if self.pilot_agility is not None:
+            overrides["agility"] = self.pilot_agility
+        if self.pilot_hull is not None:
+            overrides["hull"] = self.pilot_hull
+        for name, val in [
+            ("shield", self.pilot_shield),
+            ("force", self.pilot_force),
+            ("energy", self.pilot_energy),
+            ("charge", self.pilot_charge),
+        ]:
+            if any(v is not None for v in val.values()):
+                overrides[name] = val
+        return overrides
+
     @property
     def pilot_shield(self) -> dict:
         return self.evaluate_attributes("shield", self.ui.pilot_shield_spinbox, self.ui.pilot_shield_recharge_spinbox, self.ui.pilot_shield_decharge_spinbox)
@@ -335,7 +355,7 @@ class DefinitionForm(QtWidgets.QDialog):
 
     @property
     def epic(self):
-        return str(self.ui.epic_checkbox.isChecked())
+        return self.ui.epic_checkbox.isChecked()
 
     @property
     def valid_entry(self):
@@ -390,29 +410,15 @@ class DefinitionForm(QtWidgets.QDialog):
                 {
                     "name": self.ship_name,
                     "base": self.base_size,
-                    "statistics": [
-                        {
-                            "attacks": self.combined_attacks_arc_types
-                        },
-                        {
-                            "agility": self.agility
-                        },
-                        {
-                            "hull": self.hull
-                        },
-                        {
-                            "shield": self.shield
-                        },
-                        {
-                            "force": self.force
-                        },
-                        {
-                            "energy": self.energy
-                        },
-                        {
-                            "charge": self.charge
-                        }
-                    ],
+                    "statistics": {
+                        "attacks": self.combined_attacks_arc_types,
+                        "agility": self.agility,
+                        "hull": self.hull,
+                        "shield": self.shield,
+                        "force": self.force,
+                        "energy": self.energy,
+                        "charge": self.charge
+                    },
                     "actions": self.combined_actions_and_colors,
                     "upgrade_slots": self.upgrade_slots,
                     "epic": self.epic,
@@ -421,34 +427,12 @@ class DefinitionForm(QtWidgets.QDialog):
             "pilot":
                 {
                     "name": self.pilot_name,
-                    "limit": self.pilot_limit,
+                    "unique": self.pilot_limit > 0,
                     "initiative": self.pilot_initiative,
                     "cost": self.pilot_cost,
-                    "statistics": [
-                        {
-                            "attacks": self.pilot_combined_attacks_arc_types
-                        },
-                        {
-                            "agility": self.pilot_agility
-                        },
-                        {
-                            "hull": self.pilot_hull
-                        },
-                        {
-                            "shield": self.pilot_shield
-                        },
-                        {
-                            "force": self.pilot_force
-                        },
-                        {
-                            "energy": self.pilot_energy
-                        },
-                        {
-                            "charge": self.pilot_charge
-                        }
-                    ],
-                    "actions": self.pilot_combined_actions_and_colors,
-                    "upgrade_slots": self.pilot_upgrade_slots,
+                    "stat_overrides": self._build_pilot_stat_overrides(),
+                    "extra_actions": self.pilot_combined_actions_and_colors,
+                    "extra_upgrade_slots": self.pilot_upgrade_slots,
                     "keywords": self.pilot_traits
                 }
         }
@@ -635,24 +619,21 @@ class DefinitionForm(QtWidgets.QDialog):
             arr_to_comma_separated_list(ship.upgrade_slots))
 
         parse_check_box(
-            self.ui.epic_checkbox, ship.ship_data.get("epic", "False")
+            self.ui.epic_checkbox, ship.ship_data.get("epic", False)
         )
 
         self.ui.pilot_name_line_edit.setText(pilot.get("name"))
 
-        shallow_pilot_entries = [
-            (self.ui.cost_spinbox, "cost"),
-            (self.ui.initiative_spinbox, "initiative"),
-            (self.ui.limit_spinbox, "limit"),
-        ]
-        for entry in shallow_pilot_entries:
-            spinbox, attribute = entry
-            spinbox.setValue(pilot.get(attribute))
+        self.ui.cost_spinbox.setValue(pilot.get("cost"))
+        self.ui.initiative_spinbox.setValue(pilot.get("initiative"))
+        self.ui.limit_spinbox.setValue(1 if pilot.get("unique", False) else 0)
+
+        stat_overrides = pilot.get("stat_overrides", {})
 
         parse_attacks(
             self.ui.pilot_attacks_line_edit,
             self.ui.pilot_arc_types_line_edit,
-            pilot.get("statistics")
+            stat_overrides
         )
 
         shallow_pilot_stats = [
@@ -661,7 +642,7 @@ class DefinitionForm(QtWidgets.QDialog):
         ]
         for stat in shallow_pilot_stats:
             spinbox, attribute = stat
-            val = ship.get_statistic(pilot.get("statistics"), attribute)
+            val = stat_overrides.get(attribute)
             if val is None:
                 val = -1
             spinbox.setValue(val)
@@ -678,7 +659,7 @@ class DefinitionForm(QtWidgets.QDialog):
         ]
         for stat in deep_pilot_stats:
             stat_spinbox, recharge_spinbox, decharge_spinbox, attribute = stat
-            deep_stat = ship.get_statistic(pilot.get("statistics"), attribute)
+            deep_stat = stat_overrides.get(attribute) or {attribute: None, "recharge": None, "decharge": None}
             deep_stat = self.parse_deep_stat(deep_stat)
             stat_spinbox.setValue(deep_stat[attribute])
             recharge_spinbox.setValue(deep_stat["recharge"])
@@ -687,11 +668,11 @@ class DefinitionForm(QtWidgets.QDialog):
         parse_actions(
             self.ui.pilot_actions_line_edit,
             self.ui.pilot_colors_line_edit,
-            pilot.get("actions")
+            pilot.get("extra_actions", [])
         )
 
         self.ui.pilot_upgrade_slots_line_edit.setText(
-            arr_to_comma_separated_list(pilot.get("upgrade_slots"))
+            arr_to_comma_separated_list(pilot.get("extra_upgrade_slots", []))
         )
 
         self.ui.traits_line_edit.setText(

@@ -39,7 +39,7 @@ class PilotEquip:
         d["actions"] = self.__combine_actions()
         d["upgrade_slots"] = self.__combine_upgrade_slots()
         d["pilot_name"] = self.pilot["name"]
-        d["limit"] = self.pilot["limit"]
+        d["unique"] = self.pilot.get("unique", False)
         d["initiative"] = self.pilot["initiative"]
         d["cost"] = self.pilot["cost"]
         d["keywords"] = self.pilot["keywords"]
@@ -68,13 +68,8 @@ class PilotEquip:
 
     @property
     def limit(self):
-        temp = self.data.get("limit")
-        val = None
-        if temp is None or temp == 0:
-            val = 99
-        else:
-            val = temp
-        return val
+        """Returns 1 for unique named aces, 99 (unlimited) for generic pilots."""
+        return 1 if self.data.get("unique", False) else 99
 
     @property
     def initiative(self):
@@ -149,71 +144,44 @@ class PilotEquip:
 
     @property
     def attacks(self):
-        attacks = self.get_statistic(self.statistics, "attacks")
-        return attacks.get("attacks")
+        return self.statistics.get("attacks", [])
 
     @property
     def max_attack(self):
         return max([attack.get("attack") for attack in self.attacks])
 
     @staticmethod
-    def get_statistic(statistics_list, statistic_name):
-        for statistic in statistics_list:
-            name = list(statistic.keys())[0]
-            if name == statistic_name:
-                return statistic
-        return None
+    def get_statistic(statistics: dict, statistic_name: str):
+        """Returns the value for the given statistic from the flat statistics dict."""
+        return statistics.get(statistic_name)
 
     def get_attribute(self, attribute):
         """
         This function is used to assess attributes that impact variable cost.
         """
-        if (attribute == "base") or (attribute == "initiative"):
+        if attribute in ("base", "initiative"):
             return self.data.get(attribute)
         elif attribute == "agility":
-            statistic = self.get_statistic(self.statistics, attribute)
-            return statistic.get(attribute)
+            return self.statistics.get("agility")
         else:
             return self.max_attack
 
     def __combine_statistics(self):
-        ship_statistics = self.ship.statistics.copy()
-        pilot_statistics = self.pilot["statistics"]
-        combined = []
-        for statistic in pilot_statistics:
-            stat_key = list(statistic.keys())[0]
-            value = statistic.get(stat_key)
-            # use the pilot value if it exists
-            updated = False
-            if type(value) is list:
-                if value:
-                    updated = True
-            elif type(value) is dict:
-                for _, v in value.items():
-                    if v is not None:
-                        updated = True
-            else:
-                if value is not None:
-                    updated = True
-            if updated:
-                combined.append(statistic)
-            else:
-                combined.append(self.get_statistic(ship_statistics, stat_key))
-
+        """Merge ship statistics with any pilot-specific overrides."""
+        combined = dict(self.ship.statistics)
+        combined.update(self.pilot.get("stat_overrides", {}))
         return combined
 
     def __combine_actions(self):
         """For actions, we take all the ship actions, and see if any additional pilot actions are specified."""
         combined = self.ship.actions.copy()
-        pilot_actions = self.pilot.get("actions")
-        for action in pilot_actions:
+        for action in self.pilot.get("extra_actions", []):
             combined.append(action)
         return combined
 
     def __combine_upgrade_slots(self):
         combined = self.ship.upgrade_slots.copy()
-        pilot_slots = self.pilot.get("upgrade_slots")
-        for slot in pilot_slots:
+        for slot in self.pilot.get("extra_upgrade_slots", []):
             combined.append(slot)
         return combined
 
